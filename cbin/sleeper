@@ -1,0 +1,14 @@
+#!/usr/bin/python3
+
+import time
+import sys
+
+
+def endless_sleep():
+    while True:
+        time.sleep(60 * 60 * 24 * 365) # Sleep for a year...
+
+
+if __name__ == "__main__":
+    # execute only if run as a script
+    endless_sleep()

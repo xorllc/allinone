@@ -1,0 +1,246 @@
+#!/usr/bin/python3
+
+import os
+import sys
+import requests
+import time
+import configparser
+import shutil
+import json
+
+###
+# PER USER VARIABLES
+###
+# SSO for the current user (@oracle.com email address)
+# DO NOT MODIFY -- running `docker build` sets this.
+SSO = 'david.hamilton@oracle.com'
+# Mailing List for Security Operations
+SEC_OPS = 'cne_security_ops_ww_grp@oracle.com'
+# Signature to append to emails sent from the shell
+SIG = "\n"
+# Construct the desired path, then use list/set to remove
+# duplicates if this adds any.
+$PATH.append('/bin')
+$PATH.append('/usr/bin')
+$PATH.append('/sbin')
+$PATH.append('/usr/sbin')
+$PATH.append('/usr/local/bin')
+$PATH = list(set($PATH))
+$PAGER = 'less'
+$EDITOR = 'vim'
+
+##############################
+# Start Main CLI Functions
+##############################
+
+###
+# Lookup the Guest WiFi Password
+###
+def lookup_guest_password(user=None,password=None,region="usa",prnt=True):
+  import getpass
+  
+  ###
+  # Perform OSSO authentication based on a user/pass combo
+  ###
+  def _osso(user,password):
+    import http.cookiejar
+    from bs4 import BeautifulSoup
+
+    ###
+    # Grabs the data from an HTML form
+    ###
+    def get_form_data(request):
+      c = request.content
+      soup = BeautifulSoup(c,"html.parser")
+      data = {}
+      for var in soup.findAll('input',type="hidden"):
+        data[str(var['name'])] = str(var['value'])
+      return data
+
+
+    PROTECTED_URL = 'https://gmp.oracle.com/captcha'
+    PRODUCTION_OSSO_URL = 'https://login.oracle.com/mysso/signon.jsp'
+    AUTH_SUBMIT_URL = 'https://login.oracle.com/oam/server/sso/auth_cred_submit'
+
+    headers = {'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:43.0) Gecko/20100101 Firefox/43.0'}
+    s = requests.session()
+    s.headers.update(headers)
+
+    r = s.get(PROTECTED_URL)
+  
+    data = get_form_data(r)
+    referer = r.url
+
+    r = s.post(PRODUCTION_OSSO_URL,headers={'referer': referer}, data=data)
+
+    data = get_form_data(r)
+    referer = PRODUCTION_OSSO_URL
+
+    data['ssousername'] = user
+    data['password'] = password
+
+    r = s.post(AUTH_SUBMIT_URL,headers={'referrer': referer}, data=data)
+
+    return s
+ 
+
+  AMERICA_GUEST_NETWORK = "https://gmp.oracle.com/captcha/files/airespace_pwd.txt?_dc=1462544356596"
+
+  if user is None:
+    user = input("OSSO Username: ")
+  if password is None:
+    password = getpass.getpass()
+
+  session = _osso(user,password)
+  request = session.get(AMERICA_GUEST_NETWORK)
+  text = str(request.text.encode('utf-8'))
+  tempText = text[text.find('Password: '):]
+  guest_password = tempText[tempText.find(' ')+1:tempText.find('\\')]
+  if guest_password == "" or guest_password is None:
+    print("Error retrieving password. Check your credentials.")
+  else:
+    if prnt is True:
+      print("Today's Guest Password is: %s" % guest_password)
+    else:
+      return guest_password
+
+###
+# Basic Emailer
+###
+def email(to=None, cc=None, bcc=None, frm=None, password=None, subject=None, text=None, files=[]):
+  import smtplib
+  import getpass
+
+  from smtplib import SMTPAuthenticationError
+  from email.mime.base import MIMEBase
+  from email.mime.application import MIMEApplication
+  from email.mime.multipart import MIMEMultipart
+  from email.mime.text import MIMEText
+  from email.utils import COMMASPACE
+  from email import encoders
+
+  BEEHIVE_SERVER = "stbeehive.oracle.com"
+  BEEHIVE_PORT = 465
+
+  msg = MIMEMultipart()
+  msg['From'] = frm
+  msg['To'] = COMMASPACE.join(to)
+  if cc is not None:
+    msg['Cc'] = COMMASPACE.join(cc)
+  if bcc is not None:
+    msg['Bcc'] = COMMASPACE.join(bcc)
+  msg['Subject'] = subject
+  msg.attach(MIMEText(text))
+
+  for f in files:
+    part = MIMEBase('application', 'octet-stream')
+    part.set_payload(open(f,'rb').read())
+    encoders.encode_base64(part)
+    part.add_header('Content-Disposition', 'attachment; filename="{0}"'.format(os.path.basename(f)))
+    msg.attach(part)
+
+  rcpt = to
+  if cc is not None:
+    rcpt = rcpt+cc
+  if bcc is not None:
+    rcpt = rcpt+bcc
+  print('Recipients: ')
+  print(rcpt)
+  for x in range(0,2):
+    if password is None:
+      print("Enter SSO Password for '{}'".format(frm))
+      try:
+        password = getpass.getpass()
+      except:
+        print("Aborting Email!")
+        return
+    try:
+      server_ssl = smtplib.SMTP_SSL(BEEHIVE_SERVER,BEEHIVE_PORT)
+      server_ssl.ehlo()
+      server_ssl.login(frm, password)
+      server_ssl.sendmail(frm, rcpt, msg.as_string())
+      server_ssl.close()
+      break
+    except SMTPAuthenticationError as e:
+      print("Invalid username/password")
+      password = None
+      continue
+    except Exception as e:
+      print(type(e).__name__)
+      print("Error sending email. Please check connection to SMTP server\n{}".format(str(e)))
+      break
+
+##############################
+# Start Support Functions
+##############################
+
+###
+# Returns a dictionary of proxies
+###
+def _get_proxies():
+  proxies = {
+    'http': 'SED_PROXY',
+    'https': 'SED_PROXY',
+  }
+  return proxies
+
+###
+# Sets the proxies
+###
+def _set_proxies():
+    proxies = _get_proxies()
+    for key in proxies:
+        if key == 'http':
+            $http_proxy = proxies[key]
+        if key == 'https':
+            $https_proxy = proxies[key]
+
+###
+# Puts contents of a file into an array
+###
+def _get_file_contents(f):
+  myFile = open(f,'r')
+  lines = myFile.readlines()
+  myFile.close()
+  return lines
+
+
+###
+# Set the Prompt for xonsh
+###
+def _set_prompt(short=False):
+  import time
+
+  $PROMPT_FIELDS['time'] = lambda: time.strftime('%H:%M:%S')
+  if short:
+    $PROMPT = "[{INTENSE_BLUE}{user}{NO_COLOR}@{INTENSE_BLUE}cheshire{NO_COLOR}]$ "
+  else:
+    $PROMPT = "{INTENSE_BLUE}{time}{NO_COLOR} | {branch_color}{curr_branch:on {}}{NO_COLOR}{curr_branch: | }{INTENSE_YELLOW}{cwd}{NO_COLOR}\n[{INTENSE_BLUE}{user}{NO_COLOR}@{INTENSE_BLUE}cheshire{NO_COLOR}]$ "
+
+###
+# Set the Aliases for xonsh
+###
+def _set_aliases():
+
+    # Sync a development fork with production master
+    def _git_sync():
+        git checkout master
+        git fetch production
+        git fetch origin
+        git reset --hard production/master
+        git push -f origin master
+
+    # Generic Aliases
+    $h=$HOME
+    aliases['home'] = 'cd ~'
+    aliases['ll'] = "ls -al"
+    aliases['c'] = "clear"
+    aliases['prompt'] = _set_prompt
+    aliases['gsync'] = _git_sync
+
+#############################################################
+# Start Main Execution
+#############################################################
+$XONSH_COLOR_STYLE='vim'
+_set_prompt(False)
+_set_aliases()

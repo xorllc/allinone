@@ -1,0 +1,25 @@
+#!/bin/bash
+
+
+HEADLESS_CMD="/cbin/sleeper" # Never exits
+INTERACTIVE_CMD="su - devusr" # Switches to devuser and opens bash prompt
+
+if [ $# -eq 0 ]; then
+    # Run in default mode which no tty, supports only SSH login
+    printf "Running in headless mode.\n\n"
+    ENTRY_CMD=${HEADLESS_CMD}
+elif [ "$1" = "tty" ]; then
+    # Run in interactive tty mode as devuser
+    printf "Running in interactive mode.\n\n"
+    ENTRY_CMD=${INTERACTIVE_CMD}
+else
+    # Run command given
+    ENTRY_CMD=$1
+fi
+
+sleep 1 # wait for dockerd, et al, to spin up
+
+exec ${ENTRY_CMD}
+
+
+   

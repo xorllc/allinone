@@ -1,0 +1,22 @@
+#!/bin/bash
+
+source ~/.bashrc
+
+a_list=( curl docker docker-compose git )
+c_list=( dirs docker docker-compose git pip )
+p_list=( dirs docker docker-compose git history )
+
+for fw in "${a_list[@]}"
+do
+    bash-it enable alias ${fw}
+done
+
+for fw in "${c_list[@]}"
+do
+    bash-it enable completion ${fw}
+done
+
+for fw in "${p_list[@]}"
+do
+    bash-it enable plugin ${fw}
+done
