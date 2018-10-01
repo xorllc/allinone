@@ -1,4 +1,8 @@
 let g:netrw_dirhistmax  =10
-let g:netrw_dirhist_cnt =2
+let g:netrw_dirhist_cnt =6
 let g:netrw_dirhist_1='/home/dahamilt/test'
 let g:netrw_dirhist_2='/home/dahamilt/git/work/s3-bigtop/bt-email'
+let g:netrw_dirhist_3='/home/dahamilt/test'
+let g:netrw_dirhist_4='/cygdrive/c/Users/dahamilt/Desktop/karlsstack'
+let g:netrw_dirhist_5='/cygdrive/c/Users/dahamilt/Desktop/scanresults/archive/Docker-Bench-Security-reports'
+let g:netrw_dirhist_6='/cygdrive/c/Users/dahamilt/Desktop/scanresults/archive'
