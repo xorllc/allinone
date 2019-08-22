@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:19.04
 
 # https://github.com/docker/docker/blob/master/project/PACKAGERS.md#runtime-dependencies
 
@@ -36,6 +36,8 @@ RUN \
         libsdl2-ttf-dev \
         libsdl1.2-dev \
         libboost-all-dev \
+        x11-utils \
+        x11-xkb-utils \
     && apt-get clean -y \
     && apt-get autoclean -y \
     && apt-get auto-remove -y 
@@ -107,20 +109,18 @@ RUN ln -s /tmp/onyx /usr/share/fonts/fontfiles \
 
 # Install nomachine, change password and username to whatever you want here
 # Goto https://www.nomachine.com/download/download&id=10 and change for the latest NOMACHINE_PACKAGE_NAME and MD5 shown in that link to get the latest version.
-# nomachine_5.3.9_6_amd64.deb
-COPY nomachine.deb /tmp/nomachine.deb
-ENV NOMACHINE_MD5 050eadd9f037e31981c7e138bfcfbe80
+COPY nomachine_6.7.6_11_amd64.deb /tmp/nomachine.deb
+ENV NOMACHINE_MD5 4d94be64f52b4b5d726da7d2610feeaa
 RUN echo "${NOMACHINE_MD5} */tmp/nomachine.deb" | md5sum -c - \
     && dpkg -i /tmp/nomachine.deb
 
 ADD nxserver.sh /opt/nxserver.sh
+RUN sed -i -e s%__USER__%$username% /opt/nxserver.sh
+RUN sed -i -e s%__PASSWORD__%$password% /opt/nxserver.sh
 
 # Suckless terminal. libxft-dev was already installed above.
 COPY st /tmp/suckless/st
 RUN cd /tmp/suckless/st/st-patched && make install
-
-# i3 related.
-COPY i3config /home/user/.config/i3/config 
 
 # NES emulator related.
 COPY bjne-codebase.tar /opt/bjne-codebase.tar

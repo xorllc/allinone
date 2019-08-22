@@ -215,7 +215,7 @@ def _set_prompt(short=False):
   if short:
     $PROMPT = "[{INTENSE_BLUE}{user}{NO_COLOR}@{INTENSE_BLUE}cheshire{NO_COLOR}]$ "
   else:
-    $PROMPT = "{INTENSE_BLUE}{time}{NO_COLOR} | {branch_color}{curr_branch:on {}}{NO_COLOR}{curr_branch: | }{INTENSE_YELLOW}{cwd}{NO_COLOR}\n[{INTENSE_BLUE}{user}{NO_COLOR}@{INTENSE_BLUE}cheshire{NO_COLOR}]$ "
+    $PROMPT = "{INTENSE_BLUE}{time}{NO_COLOR} | {branch_color}{curr_branch:on {}}{NO_COLOR}{curr_branch: | }{INTENSE_YELLOW}{cwd}{NO_COLOR} [{INTENSE_BLUE}{user}{NO_COLOR}@{INTENSE_BLUE}cheshire{NO_COLOR}]$ "
 
 ###
 # Set the Aliases for xonsh
@@ -244,3 +244,4 @@ def _set_aliases():
 $XONSH_COLOR_STYLE='vim'
 _set_prompt(False)
 _set_aliases()
+xmodmap .xmodmap
