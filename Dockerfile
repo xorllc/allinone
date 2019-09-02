@@ -120,7 +120,7 @@ RUN sed -i -e s%__PASSWORD__%$password% /opt/nxserver.sh
 
 # Suckless terminal. libxft-dev was already installed above.
 COPY st /tmp/suckless/st
-RUN cd /tmp/suckless/st/st-patched && make install
+RUN cd /tmp/suckless/st/my-modified/st/ && make install
 
 # NES emulator related.
 COPY bjne-codebase.tar /opt/bjne-codebase.tar
