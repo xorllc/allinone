@@ -120,7 +120,7 @@ RUN sed -i -e s%__PASSWORD__%$password% /opt/nxserver.sh
 
 # Suckless terminal. libxft-dev was already installed above.
 COPY st /tmp/suckless/st
-RUN cd /tmp/suckless/st/my-modified/st/ && make install
+RUN cd /tmp/suckless/st/st-patched/ && make install
 
 # NES emulator related.
 COPY bjne-codebase.tar /opt/bjne-codebase.tar
@@ -138,6 +138,13 @@ RUN mkdir -p /opt/nes \
     && scons
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
+USER devusr
+RUN sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+USER root
+RUN sh -c "$(wget -O- https://raw.githubusercontent.com/ohmyzsh/ohmyzsh/master/tools/install.sh)"
+RUN chsh -s /usr/bin/zsh devusr
+RUN chsh -s /usr/bin/zsh
 RUN mkdir /run/sshd
+COPY devusr/.zshrc /home/devusr/.zshrc
 ENTRYPOINT ["/usr/bin/entrypoint.sh"]
 ENTRYPOINT ["supervisord"]
