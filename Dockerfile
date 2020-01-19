@@ -125,6 +125,7 @@ RUN cd /tmp/suckless/st/st-patched/ && make install
 # NES emulator related.
 COPY bjne-codebase.tar /opt/bjne-codebase.tar
 COPY laines-codebase.tar /opt/laines-codebase.tar
+COPY olc-codebase.tar /opt/olc-codebase.tar
 RUN mkdir -p /opt/nes \
     && cd /opt/nes \
     && mv /opt/laines-codebase.tar /opt/nes/laines-codebase.tar \
@@ -135,7 +136,12 @@ RUN mkdir -p /opt/nes \
     && mv /opt/bjne-codebase.tar /opt/nes/bjne-codebase.tar \
     && tar -xvf bjne-codebase.tar \
     && cd /opt/nes/bjne-codebase \
-    && scons
+    && scons \
+    && cd /opt/nes \
+    && mv /opt/olc-codebase.tar /opt/nes/olc-codebase.tar \
+    && tar -xvf olc-codebase.tar \
+    && cd /opt/nes/olcNES/Part\ #5\ -\ PPU\ Foregrounds/ \
+    && g++ *.cpp -o out -lX11 -lGL -lpthread -pthread -lpng
 
 COPY entrypoint.sh /usr/bin/entrypoint.sh
 USER devusr
